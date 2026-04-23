@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 3. Primitives
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // User Validation
+    function isValidUser(data) {
+      return data.uid is string && data.uid.size() <= 128 &&
+             data.isAnonymous is bool &&
+             (data.name == null || (data.name is string && data.name.size() <= 100)) &&
+             (data.tags == null || (data.tags is list && data.tags.size() <= 20)) &&
+             (data.intensity == null || (data.intensity is int && data.intensity >= 1 && data.intensity <= 10)) &&
+             (data.role == null || data.role in ['user', 'therapist', 'admin']);
+    }
+
+    // 1. Master Gate: User Profiles
+    match /users/{uid} {
+      allow get: if isSignedIn(); // Users can see each other for matching
+      allow create, update: if isOwner(uid) && isValidUser(incoming()) && (
+        request.method == 'create' || (
+          // Immortal fields
+          incoming().uid == existing().uid &&
+          incoming().role == existing().role
+        )
+      );
+    }
+
+    // 2. Master Gate: Matches
+    match /matches/{matchId} {
+      function isParticipant() {
+        return isSignedIn() && (request.auth.uid in existing().participants);
+      }
+      
+      allow get: if isParticipant();
+      allow list: if isSignedIn() && request.auth.uid in resource.data.participants;
+      
+      // Matches are created by the server (backend logic) but for this demo 
+      // we'll allow participating creates if valid. In production, this would be restricted.
+      allow create: if isSignedIn() && request.auth.uid in incoming().participants;
+      allow update: if isParticipant() && incoming().participants == existing().participants;
+    }
+
+    // 4. Messages subcollection (Master Gate sync with Match)
+    match /matches/{matchId}/messages/{msgId} {
+      function canChat() {
+        return isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/matches/$(matchId)).data.participants);
+      }
+      
+      allow read, list: if canChat();
+      allow create: if canChat() && incoming().senderId == request.auth.uid && incoming().text is string && incoming().text.size() <= 5000;
+    }
+  }
+}

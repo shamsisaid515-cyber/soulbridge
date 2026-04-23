@@ -5,6 +5,7 @@
 
 import { create } from 'zustand';
 import { User, Message, Match, Therapist, ChatSession } from './types';
+import { io, Socket } from 'socket.io-client';
 
 interface SoulBridgeState {
   user: User | null;
@@ -13,6 +14,8 @@ interface SoulBridgeState {
   matches: Match[];
   therapists: Therapist[];
   isMatching: boolean;
+  socket: Socket | null;
+  presenceList: Map<string, string>;
   
   // Actions
   setUser: (user: User | null) => void;
@@ -22,11 +25,12 @@ interface SoulBridgeState {
   setIsMatching: (loading: boolean) => void;
   updateOnboarding: (data: Partial<User>) => void;
   completeOnboarding: () => void;
+  initSocket: (uid: string, name: string) => void;
 }
 
-export const useStore = create<SoulBridgeState>((set) => ({
+export const useStore = create<SoulBridgeState>((set, get) => ({
   user: {
-    id: 'me',
+    id: `user_${Math.random().toString(36).substr(2, 9)}`,
     name: '',
     isAnonymous: true,
     onboarded: false,
@@ -56,6 +60,8 @@ export const useStore = create<SoulBridgeState>((set) => ({
     }
   ],
   isMatching: false,
+  socket: null,
+  presenceList: new Map(),
 
   setUser: (user) => set({ user }),
   setMatch: (match) => set({ match }),
@@ -75,5 +81,28 @@ export const useStore = create<SoulBridgeState>((set) => ({
   })),
   completeOnboarding: () => set((state) => ({
     user: state.user ? { ...state.user, onboarded: true } : null
-  }))
+  })),
+  initSocket: (uid, name) => {
+    const existingSocket = get().socket;
+    if (existingSocket) return;
+
+    const socket = io(); // Connects to the same host
+    
+    socket.on('connect', () => {
+      socket.emit('user:online', { uid, name });
+    });
+
+    socket.on('presence:update', (list: [string, any][]) => {
+      set({ presenceList: new Map(list.map(([id, info]) => [id, info.status])) });
+    });
+
+    socket.on('message:received', (message: Message) => {
+      // Re-use addMessage logic
+      if (message.senderId !== 'me') {
+        get().addMessage(message);
+      }
+    });
+
+    set({ socket });
+  }
 }));

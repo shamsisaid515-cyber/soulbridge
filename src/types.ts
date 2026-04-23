@@ -12,6 +12,8 @@ export interface User {
   tags: string[];
   intensity: number;
   currentStruggle: string;
+  isOnline?: boolean;
+  lastSeen?: string;
 }
 
 export interface Message {

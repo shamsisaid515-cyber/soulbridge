@@ -1,0 +1,62 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account and emotional profile for SoulBridge.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "isAnonymous": { "type": "boolean" },
+        "currentStruggle": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "intensity": { "type": "integer" },
+        "isOnline": { "type": "boolean" },
+        "lastSeen": { "type": "string", "format": "date-time" },
+        "role": { "type": "string", "enum": ["user", "therapist", "admin"] }
+      },
+      "required": ["uid", "isAnonymous"]
+    },
+    "Match": {
+      "title": "Match",
+      "description": "A peer-to-peer connection between two users.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "participants": { "type": "array", "items": { "type": "string" } },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["active", "closed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["participants", "status"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A single chat message within a match or AI session.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "senderId": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["text", "system", "ai"] },
+        "isFlagged": { "type": "boolean" }
+      },
+      "required": ["senderId", "text", "timestamp"]
+    }
+  },
+  "firestore": {
+    "users/{uid}": {
+      "schema": "User",
+      "description": "Stores user profiles."
+    },
+    "matches/{matchId}": {
+      "schema": "Match",
+      "description": "Stores peer matches."
+    },
+    "matches/{matchId}/messages/{msgId}": {
+      "schema": "Message",
+      "description": "Stores messages for a specific match."
+    }
+  }
+}

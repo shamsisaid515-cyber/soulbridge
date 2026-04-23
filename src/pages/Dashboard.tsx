@@ -20,23 +20,51 @@ import ChatWindow from '../components/chat/ChatWindow';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { user, match, isMatching, setIsMatching, setMatch, setActiveSession, activeSession } = useStore();
+  const { user, match, isMatching, setIsMatching, setMatch, setActiveSession, activeSession, initSocket } = useStore();
 
-  const startMatching = () => {
+  useEffect(() => {
+    if (user?.id) {
+       initSocket(user.id, user.name || 'Anonymous');
+    }
+  }, [user?.id, initSocket]);
+
+  const startMatching = async () => {
     setIsMatching(true);
-    // Simulate matching delay
-    setTimeout(() => {
-      setIsMatching(false);
-      setMatch({
-        id: 'user-123',
-        name: 'Alex',
-        isAnonymous: true,
-        onboarded: true,
-        tags: ['Grief', 'Anxiety'],
-        intensity: 7,
-        currentStruggle: 'I recently lost my job and I am feeling a bit lost.'
+    try {
+      const response = await fetch('/api/match/find', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          uid: user?.id,
+          tags: user?.tags,
+          intensity: user?.intensity
+        })
       });
-    }, 3000);
+      const data = await response.json();
+      
+      // Artificial delay for scanning animation
+      await new Promise(r => setTimeout(r, 2000));
+      
+      if (data.match) {
+        const peerId = data.match.participants.find((p: string) => p !== user?.id);
+        setMatch({
+          id: peerId,
+          name: 'Matched Peer',
+          isAnonymous: true,
+          onboarded: true,
+          tags: data.match.tags,
+          intensity: 5,
+          currentStruggle: ''
+        });
+      } else {
+        // Handle fallback or prompt UI
+        alert("No human peer found at the moment. Our AI support is always available.");
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsMatching(false);
+    }
   };
 
   const openChat = (isAI = false) => {

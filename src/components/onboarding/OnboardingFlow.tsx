@@ -8,6 +8,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../../store';
 import { ChevronRight, ChevronLeft, Heart, Ghost, User } from 'lucide-react';
 
+import { db } from '../../lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+
 const STEPS = [
   {
     id: 'identity',
@@ -32,10 +35,23 @@ export default function OnboardingFlow() {
   const [step, setStep] = useState(0);
   const { user, updateOnboarding, completeOnboarding } = useStore();
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step < STEPS.length - 1) {
       setStep(step + 1);
     } else {
+      // Save to Firebase before completing
+      if (user) {
+        try {
+          await setDoc(doc(db, 'users', user.id), {
+            ...user,
+            onboarded: true,
+            isOnline: true,
+            lastSeen: new Date().toISOString()
+          });
+        } catch (e) {
+          console.error("Error saving profile:", e);
+        }
+      }
       completeOnboarding();
     }
   };

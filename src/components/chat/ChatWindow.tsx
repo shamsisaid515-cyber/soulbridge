@@ -29,8 +29,14 @@ interface ChatWindowProps {
 
 export default function ChatWindow({ onClose, isAISession = false }: ChatWindowProps) {
   const [inputText, setInputText] = useState('');
-  const { activeSession, addMessage, match, user } = useStore();
+  const { activeSession, addMessage, match, user, socket, presenceList } = useStore();
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (match?.id && socket) {
+      socket.emit('room:join', [user?.id, match.id].sort().join('_'));
+    }
+  }, [match?.id, socket, user?.id]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -41,26 +47,27 @@ export default function ChatWindow({ onClose, isAISession = false }: ChatWindowP
   const handleSend = () => {
     if (!inputText.trim()) return;
 
+    const matchId = isAISession ? 'ai' : [user?.id, match?.id].sort().join('_');
     const newMessage = {
       id: Math.random().toString(36).substr(2, 9),
       senderId: 'me',
       text: inputText,
       timestamp: Date.now(),
-      type: isAISession ? 'ai' : 'human' as any
+      type: isAISession ? 'ai' : 'human' as any,
+      matchId
     };
 
     addMessage(newMessage);
-    setInputText('');
-
-    // If it's a human session, simulate a typing notification
-    if (!isAISession) {
-      setTimeout(() => {
-        // Simulate a simple AI buddy or just wait for peer
-      }, 1000);
+    
+    if (socket && !isAISession) {
+      socket.emit('message:send', newMessage);
     }
+    
+    setInputText('');
   };
 
   const targetName = isAISession ? "AI Guide" : (match?.name || "Peer");
+  const isOnline = isAISession || (match?.id && presenceList.get(match.id) === 'online');
 
   return (
     <div className={cn(
@@ -83,9 +90,12 @@ export default function ChatWindow({ onClose, isAISession = false }: ChatWindowP
               {targetName}
               {isAISession && <span className="text-[9px] px-1.5 py-0.5 bg-indigo-500/20 text-[#8B93FF] rounded uppercase tracking-widest font-bold">SoulBridge AI</span>}
             </h4>
-            <p className="text-[10px] text-green-400 flex items-center gap-1 font-bold tracking-tighter uppercase">
-              <span className="w-1 h-1 rounded-full bg-green-400" />
-              Active
+            <p className={cn(
+              "text-[10px] flex items-center gap-1 font-bold tracking-tighter uppercase",
+              isOnline ? "text-green-400" : "text-white/20"
+            )}>
+              <span className={cn("w-1 h-1 rounded-full", isOnline ? "bg-green-400" : "bg-white/10")} />
+              {isOnline ? 'Online' : 'Offline'}
             </p>
           </div>
         </div>
