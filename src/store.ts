@@ -1,0 +1,79 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { create } from 'zustand';
+import { User, Message, Match, Therapist, ChatSession } from './types';
+
+interface SoulBridgeState {
+  user: User | null;
+  match: User | null;
+  activeSession: ChatSession | null;
+  matches: Match[];
+  therapists: Therapist[];
+  isMatching: boolean;
+  
+  // Actions
+  setUser: (user: User | null) => void;
+  setMatch: (match: User | null) => void;
+  setActiveSession: (session: ChatSession | null) => void;
+  addMessage: (message: Message) => void;
+  setIsMatching: (loading: boolean) => void;
+  updateOnboarding: (data: Partial<User>) => void;
+  completeOnboarding: () => void;
+}
+
+export const useStore = create<SoulBridgeState>((set) => ({
+  user: {
+    id: 'me',
+    name: '',
+    isAnonymous: true,
+    onboarded: false,
+    tags: [],
+    intensity: 5,
+    currentStruggle: '',
+  },
+  match: null,
+  activeSession: null,
+  matches: [],
+  therapists: [
+    {
+      id: 't1',
+      name: 'Dr. Sarah Wilson',
+      specialties: ['Grief', 'Anxiety'],
+      bio: 'Over 15 years of experience in cognitive behavioral therapy.',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
+      price: '$80/session'
+    },
+    {
+      id: 't2',
+      name: 'Marcus Chen',
+      specialties: ['Stress', 'Work-Life Balance'],
+      bio: 'Helping professionals navigate high-pressure environments.',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop',
+      price: '$95/session'
+    }
+  ],
+  isMatching: false,
+
+  setUser: (user) => set({ user }),
+  setMatch: (match) => set({ match }),
+  setActiveSession: (activeSession) => set({ activeSession }),
+  addMessage: (message) => set((state) => {
+    if (!state.activeSession) return state;
+    return {
+      activeSession: {
+        ...state.activeSession,
+        messages: [...state.activeSession.messages, message]
+      }
+    };
+  }),
+  setIsMatching: (isMatching) => set({ isMatching }),
+  updateOnboarding: (data) => set((state) => ({
+    user: state.user ? { ...state.user, ...data } : null
+  })),
+  completeOnboarding: () => set((state) => ({
+    user: state.user ? { ...state.user, onboarded: true } : null
+  }))
+}));

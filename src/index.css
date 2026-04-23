@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Cormorant+Garamond", Georgia, serif;
+}
+
+:root {
+  --bg-dark: #0A0B10;
+  --ink: #E0E0E6;
+  --accent-primary: #8B93FF;
+  --accent-secondary: #D291FF;
+  --error: #FF4E4E;
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+@layer base {
+  body {
+    @apply font-sans bg-[#0A0B10] text-[#E0E0E6] antialiased selection:bg-[#8B93FF]/30;
+  }
+}
+
+@layer components {
+  .atmosphere-gradient {
+    @apply fixed inset-0 -z-10 overflow-hidden pointer-events-none;
+    background: #0A0B10;
+  }
+
+  .atmosphere-blobs {
+    @apply absolute inset-0 -z-10 overflow-hidden opacity-40 pointer-events-none;
+  }
+
+  .blob-1 {
+    @apply absolute -top-[20%] -left-[10%] w-[600px] h-[600px] bg-[#3B3486] rounded-full blur-[120px];
+  }
+
+  .blob-2 {
+    @apply absolute top-[40%] -right-[10%] w-[500px] h-[500px] bg-[#172554] rounded-full blur-[120px];
+  }
+
+  .blob-3 {
+    @apply absolute -bottom-[10%] left-[30%] w-[400px] h-[400px] bg-[#6366f1] opacity-20 rounded-full blur-[100px];
+  }
+
+  .glass-card {
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl overflow-hidden;
+  }
+
+  .button-primary {
+    @apply px-8 py-3 rounded-full font-medium transition-all duration-300 bg-[#8B93FF] text-black hover:bg-[#7a82ff] active:scale-[0.98] disabled:opacity-30;
+  }
+
+  .button-secondary {
+    @apply px-8 py-3 rounded-full font-medium transition-all duration-300 bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 active:scale-[0.98];
+  }
+
+  .button-ghost {
+    @apply px-4 py-2 rounded-full text-xs font-medium text-white/60 hover:text-white transition-colors;
+  }
+
+  .button-danger {
+    @apply flex items-center gap-4 p-4 rounded-3xl bg-[#FF4E4E]/10 border border-[#FF4E4E]/30 text-[#FF4E4E] hover:bg-[#FF4E4E]/20 transition-all;
+  }
+
+  .nav-blur {
+    @apply border-b border-white/5 backdrop-blur-md bg-black/20;
+  }
+}
+
+.mask-fade-y {
+  mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
+}
